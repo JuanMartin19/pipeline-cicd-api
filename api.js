@@ -68,7 +68,7 @@ app.delete('/products/:id', (req, res) => {
 });
 
 app.get('/status', (req, res) => {
-    res.json(formatResponse({ status: "API funcionando correctamente" }));
+    res.json(formatResponse({ status: "API actualizada en vivo por CI/CD" }));
 });
 
 app.post('/echo', (req, res) => {
