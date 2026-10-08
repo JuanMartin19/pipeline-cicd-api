@@ -68,7 +68,7 @@ app.delete('/products/:id', (req, res) => {
 });
 
 app.get('/status', (req, res) => {
-    res.json(formatResponse({ status: "API actualizada al 07/10/26" }));
+    res.json(formatResponse({ status: "API actualizada al dia de hoy" }));
 });
 
 app.post('/echo', (req, res) => {
