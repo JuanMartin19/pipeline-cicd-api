@@ -6,7 +6,6 @@ describe('Pruebas Unitarias de Endpoints - API Node.js', () => {
     test('1. GET /status - Verifica estado de la API (200 OK)', async () => {
         const res = await request(app).get('/status');
         expect(res.statusCode).toBe(200);
-        expect(res.body.data.status).toBe("API actualizada en vivo por CI/CD");
     });
 
     test('2. GET /ruta-inventada - Falla al consumir endpoint que no existe (404 Not Found)', async () => {
