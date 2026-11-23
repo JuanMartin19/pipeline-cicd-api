@@ -38,13 +38,31 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
-      - name: Subir reporte de Cobertura V8 (c8)
+      - name: Subir reporte de Cobertura V8
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage/
           retention-days: 14
+
+      - name: Reportar resultado de pruebas a OpenObserve
+        if: always()
+        run: |
+          ESTADO="EXITO"
+          if [ "${{ job.status }}" != "success" ]; then
+            ESTADO="FALLO"
+          fi
+          curl -s -X POST "http://18.218.203.69:5080/api/default/cicd_pipeline/_json" \
+            -u "admin@uteq.edu.mx:OpenObserve123*" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"etapa\": \"qa-playwright\",
+              \"estado\": \"$ESTADO\",
+              \"commit\": \"${{ github.sha }}\",
+              \"rama\": \"${{ github.ref_name }}\",
+              \"usuario\": \"${{ github.actor }}\"
+            }]"
 
   deploy-aws-ec2:
     name: Despliegue Continuo Docker en AWS EC2
@@ -83,3 +101,18 @@ jobs:
             sleep 4
             curl -f http://localhost:3000/api/health
           EOF
+
+      - name: Reportar despliegue en EC2 a OpenObserve
+        if: success()
+        run: |
+          curl -s -X POST "http://18.218.203.69:5080/api/default/cicd_pipeline/_json" \
+            -u "admin@uteq.edu.mx:OpenObserve123*" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"etapa\": \"deploy-aws-ec2\",
+              \"estado\": \"DESPLIEGUE_COMPLETADO\",
+              \"commit\": \"${{ github.sha }}\",
+              \"rama\": \"${{ github.ref_name }}\",
+              \"usuario\": \"${{ github.actor }}\",
+              \"servidor\": \"18.218.203.69:3000\"
+            }]"
