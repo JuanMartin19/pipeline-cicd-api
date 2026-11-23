@@ -1,0 +1,85 @@
+name: CI/CD Pipeline - UTEQ Gestión y Observabilidad
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  qa-playwright-coverage:
+    name: Pruebas E2E Playwright y Cobertura V8
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias del proyecto
+        run: npm ci
+
+      - name: Instalar navegador Chromium para Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Ejecutar suite E2E y generar reporte de cobertura
+        run: npm run test:coverage
+
+      - name: Subir reporte HTML de Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Subir reporte de Cobertura V8 (c8)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
+  deploy-aws-ec2:
+    name: Despliegue Continuo Docker en AWS EC2
+    needs: qa-playwright-coverage
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código validado
+        uses: actions/checkout@v4
+
+      - name: Configurar clave SSH para AWS EC2
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key.pem
+          chmod 600 ~/.ssh/ec2_key.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Transferir archivos de aplicación a EC2
+        run: |
+          ssh -i ~/.ssh/ec2_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/app-gestion"
+          scp -i ~/.ssh/ec2_key.pem -r package.json package-lock.json Dockerfile .dockerignore api.js database.js telemetry.js public ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app-gestion/
+
+      - name: Construir imagen Docker y desplegar contenedor en puerto 3000
+        run: |
+          ssh -i ~/.ssh/ec2_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/app-gestion
+            sudo docker build -t uteq-sistema-gestion:latest .
+            sudo docker rm -f uteq-sistema-gestion || true
+            sudo docker run -d \
+              --name uteq-sistema-gestion \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -v ~/app-gestion/data:/app/data \
+              uteq-sistema-gestion:latest
+            sleep 4
+            curl -f http://localhost:3000/api/health
+          EOF

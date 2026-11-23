@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Principal - CRUD Users y Productos</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { margin: 0; background: #f1f5f9; color: #0f172a; }
+    header {
+      background: #0f172a; color: #fff; padding: 1rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    header h2 { margin: 0; font-size: 1.2rem; }
+    .user-bar { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; }
+    .btn-logout {
+      background: #dc2626; color: #fff; border: none; padding: 0.5rem 0.9rem;
+      border-radius: 6px; cursor: pointer; font-weight: 600;
+    }
+    .container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; display: grid; gap: 2rem; }
+    .panel {
+      background: #fff; padding: 1.5rem; border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .panel h3 { margin: 0 0 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
+    form.grid-form {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem; margin-bottom: 1.25rem; align-items: end;
+    }
+    .field label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; color: #475569; }
+    .field input, .field select {
+      width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px;
+    }
+    .actions { display: flex; gap: 0.5rem; }
+    .btn-primary {
+      background: #2563eb; color: #fff; border: none; padding: 0.6rem 1rem;
+      border-radius: 6px; cursor: pointer; font-weight: 600;
+    }
+    .btn-secondary {
+      background: #64748b; color: #fff; border: none; padding: 0.6rem 0.9rem;
+      border-radius: 6px; cursor: pointer; display: none;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 0.7rem; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f8fafc; color: #334155; }
+    .btn-edit {
+      background: #f59e0b; color: #fff; border: none; padding: 0.35rem 0.65rem;
+      border-radius: 4px; cursor: pointer; margin-right: 0.3rem;
+    }
+    .btn-del {
+      background: #ef4444; color: #fff; border: none; padding: 0.35rem 0.65rem;
+      border-radius: 4px; cursor: pointer;
+    }
+    .alert {
+      padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; display: none; font-size: 0.88rem;
+    }
+    .alert-ok { background: #dcfce7; color: #166534; }
+    .alert-err { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Panel de Administración • Inventario y Usuarios</h2>
+    <div class="user-bar">
+      <span id="usuario-activo" data-testid="active-user"></span>
+      <button id="btn-logout" data-testid="logout-btn" class="btn-logout">Cerrar Sesión</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- SECCIÓN 1: CRUD USERS -->
+    <section class="panel" id="seccion-users">
+      <h3>Gestión de Usuarios (CRUD Users)</h3>
+      <div id="alert-user" class="alert"></div>
+
+      <form id="form-user" class="grid-form">
+        <input type="hidden" id="user-id" />
+        <div class="field">
+          <label for="user-nombre">Nombre completo</label>
+          <input type="text" id="user-nombre" data-testid="user-nombre" placeholder="Ej. Juan Pérez" required />
+        </div>
+        <div class="field">
+          <label for="user-email">Correo electrónico</label>
+          <input type="email" id="user-email" data-testid="user-email" placeholder="juan@uteq.edu.mx" required />
+        </div>
+        <div class="field">
+          <label for="user-password">Contraseña</label>
+          <input type="password" id="user-password" data-testid="user-password" placeholder="Contraseña" />
+        </div>
+        <div class="field">
+          <label for="user-rol">Rol</label>
+          <select id="user-rol" data-testid="user-rol">
+            <option value="usuario">Usuario</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button type="submit" id="btn-save-user" data-testid="user-submit" class="btn-primary">Guardar Usuario</button>
+          <button type="button" id="btn-cancel-user" class="btn-secondary">Cancelar</button>
+        </div>
+      </form>
+
+      <table id="tabla-users" data-testid="tabla-users">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-users"></tbody>
+      </table>
+    </section>
+
+    <!-- SECCIÓN 2: CRUD PRODUCTOS -->
+    <section class="panel" id="seccion-productos">
+      <h3>Gestión de Productos (CRUD Productos)</h3>
+      <div id="alert-prod" class="alert"></div>
+
+      <form id="form-prod" class="grid-form">
+        <input type="hidden" id="prod-id" />
+        <div class="field">
+          <label for="prod-nombre">Nombre del producto</label>
+          <input type="text" id="prod-nombre" data-testid="prod-nombre" placeholder="Ej. Teclado Mecánico" required />
+        </div>
+        <div class="field">
+          <label for="prod-descripcion">Descripción</label>
+          <input type="text" id="prod-descripcion" data-testid="prod-descripcion" placeholder="Switch Red RGB" />
+        </div>
+        <div class="field">
+          <label for="prod-precio">Precio ($ MXN)</label>
+          <input type="number" step="0.01" min="0" id="prod-precio" data-testid="prod-precio" placeholder="1250.00" required />
+        </div>
+        <div class="field">
+          <label for="prod-stock">Stock</label>
+          <input type="number" min="0" id="prod-stock" data-testid="prod-stock" placeholder="10" required />
+        </div>
+        <div class="actions">
+          <button type="submit" id="btn-save-prod" data-testid="prod-submit" class="btn-primary">Guardar Producto</button>
+          <button type="button" id="btn-cancel-prod" class="btn-secondary">Cancelar</button>
+        </div>
+      </form>
+
+      <table id="tabla-productos" data-testid="tabla-productos">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Producto</th>
+            <th>Descripción</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-productos"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const userStored = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !userStored) {
+      window.location.href = '/index.html';
+    } else {
+      document.getElementById('usuario-activo').textContent = `${userStored.nombre} (${userStored.rol})`;
+    }
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/index.html';
+    });
+
+    function mostrarAlerta(idElem, texto, esError = false) {
+      const el = document.getElementById(idElem);
+      el.textContent = texto;
+      el.className = `alert ${esError ? 'alert-err' : 'alert-ok'}`;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 3500);
+    }
+
+    // ==================== LÓGICA USERS ====================
+    async function cargarUsers() {
+      const res = await fetch('/api/users');
+      const users = await res.json();
+      const tbody = document.getElementById('tbody-users');
+      tbody.innerHTML = '';
+
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${u.id}</td>
+          <td>${u.nombre}</td>
+          <td>${u.email}</td>
+          <td>${u.rol}</td>
+          <td>
+            <button class="btn-edit" data-testid="edit-user-${u.id}" onclick='editarUser(${JSON.stringify(u)})'>Editar</button>
+            <button class="btn-del" data-testid="delete-user-${u.id}" onclick="eliminarUser(${u.id})">Eliminar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function editarUser(u) {
+      document.getElementById('user-id').value = u.id;
+      document.getElementById('user-nombre').value = u.nombre;
+      document.getElementById('user-email').value = u.email;
+      document.getElementById('user-password').value = '';
+      document.getElementById('user-rol').value = u.rol;
+      document.getElementById('btn-save-user').textContent = 'Actualizar Usuario';
+      document.getElementById('btn-cancel-user').style.display = 'inline-block';
+    }
+
+    function resetFormUser() {
+      document.getElementById('form-user').reset();
+      document.getElementById('user-id').value = '';
+      document.getElementById('btn-save-user').textContent = 'Guardar Usuario';
+      document.getElementById('btn-cancel-user').style.display = 'none';
+    }
+
+    document.getElementById('btn-cancel-user').addEventListener('click', resetFormUser);
+
+    document.getElementById('form-user').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('user-id').value;
+      const payload = {
+        nombre: document.getElementById('user-nombre').value,
+        email: document.getElementById('user-email').value,
+        password: document.getElementById('user-password').value,
+        rol: document.getElementById('user-rol').value
+      };
+
+      const url = id ? `/api/users/${id}` : '/api/users';
+      const method = id ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        mostrarAlerta('alert-user', data.error || 'Error al guardar usuario', true);
+        return;
+      }
+
+      mostrarAlerta('alert-user', id ? 'Usuario actualizado' : 'Usuario creado');
+      resetFormUser();
+      cargarUsers();
+    });
+
+    async function eliminarUser(id) {
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        mostrarAlerta('alert-user', 'Usuario eliminado');
+        cargarUsers();
+      }
+    }
+
+    // ==================== LÓGICA PRODUCTOS ====================
+    async function cargarProductos() {
+      const res = await fetch('/api/productos');
+      const productos = await res.json();
+      const tbody = document.getElementById('tbody-productos');
+      tbody.innerHTML = '';
+
+      productos.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.id}</td>
+          <td>${p.nombre}</td>
+          <td>${p.descripcion || ''}</td>
+          <td>$${Number(p.precio).toFixed(2)}</td>
+          <td>${p.stock}</td>
+          <td>
+            <button class="btn-edit" data-testid="edit-prod-${p.id}" onclick='editarProd(${JSON.stringify(p)})'>Editar</button>
+            <button class="btn-del" data-testid="delete-prod-${p.id}" onclick="eliminarProd(${p.id})">Eliminar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function editarProd(p) {
+      document.getElementById('prod-id').value = p.id;
+      document.getElementById('prod-nombre').value = p.nombre;
+      document.getElementById('prod-descripcion').value = p.descripcion || '';
+      document.getElementById('prod-precio').value = p.precio;
+      document.getElementById('prod-stock').value = p.stock;
+      document.getElementById('btn-save-prod').textContent = 'Actualizar Producto';
+      document.getElementById('btn-cancel-prod').style.display = 'inline-block';
+    }
+
+    function resetFormProd() {
+      document.getElementById('form-prod').reset();
+      document.getElementById('prod-id').value = '';
+      document.getElementById('btn-save-prod').textContent = 'Guardar Producto';
+      document.getElementById('btn-cancel-prod').style.display = 'none';
+    }
+
+    document.getElementById('btn-cancel-prod').addEventListener('click', resetFormProd);
+
+    document.getElementById('form-prod').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('prod-id').value;
+      const payload = {
+        nombre: document.getElementById('prod-nombre').value,
+        descripcion: document.getElementById('prod-descripcion').value,
+        precio: parseFloat(document.getElementById('prod-precio').value),
+        stock: parseInt(document.getElementById('prod-stock').value, 10)
+      };
+
+      const url = id ? `/api/productos/${id}` : '/api/productos';
+      const method = id ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        mostrarAlerta('alert-prod', data.error || 'Error al guardar producto', true);
+        return;
+      }
+
+      mostrarAlerta('alert-prod', id ? 'Producto actualizado' : 'Producto creado');
+      resetFormProd();
+      cargarProductos();
+    });
+
+    async function eliminarProd(id) {
+      const res = await fetch(`/api/productos/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        mostrarAlerta('alert-prod', 'Producto eliminado');
+        cargarProductos();
+      }
+    }
+
+    cargarUsers();
+    cargarProductos();
+  </script>
+</body>
+</html>
