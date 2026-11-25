@@ -220,6 +220,10 @@ app.put('/api/productos/:id', async (req, res) => {
     const precioNum = Number(precio);
     const stockNum = stock !== undefined && stock !== '' ? parseInt(stock, 10) : existente.stock;
 
+    if (precioNum < 0 || stockNum < 0) {
+      return res.status(400).json({ error: 'Precio y stock no pueden ser negativos' });
+    }
+
     await dbRun(
       'UPDATE productos SET nombre = ?, descripcion = ?, precio = ?, stock = ? WHERE id = ?',
       [nombre.trim(), (descripcion || '').trim(), precioNum, stockNum, req.params.id]
