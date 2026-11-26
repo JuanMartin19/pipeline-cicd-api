@@ -40,12 +40,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Healthcheck para monitoreo y Playwright webServer
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
+  res.status(500).json({ status: 'ERROR_INTENCIONAL_DEMO' });
 });
 
 // ==================== AUTENTICACIÓN (LOGIN) ====================
